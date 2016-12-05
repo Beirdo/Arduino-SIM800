@@ -1,22 +1,71 @@
-Firmware & Libraries for Project Freematics
-===========================================
+This library provides easy access to SIM800 based GSM/GPRS module by implementing straight-forward APIs for HTTP communication and some network features. For demonstartion of the API usage, please refer to the example sketches.
 
-Freematics Vehicle Data Logger (http://freematics.com/pages/products/freematics-one/) is an Arduino compatible device in the form of a OBD-II dongle with main controller of ATmega328p and a bunch of useful peripherals including MEMS motion sensor, microSD seat, BLE module, ESP8266 WIFI module, SIM800L GSM/GPRS module, all accessible with a unified Arduino library.
+Library API
+-----------
 
-Directory Descriptions
-----------------------
-firmware - firmware (Arduino sketch) for Freematics OBD-II Adapter (deprecated)
+Initialize the module
 
-firmware_v2 - firmware (Arduino sketch) for Freematics OBD-II Data Logger V2 (deprecated)
+    bool init();
 
-firmware_v3 - firmware (Arduino sketch) for Freematics OBD-II Data Logger V3 (deprecated)
+Setup network
 
-firmware_v4 - firmware (Arduino sketch) for Freematics OBD-II Data Logger V4 (Freematics ONE)
+    byte setup(const char* apn);
 
-libraries - Arduino libraries used in firmware
+Get network operator name
 
-How to view logged data
------------------------
-Data2KML (http://freematics.com/pages/software/data2kml/) is an open-source command line utility which converts data logged by obdlogger or megalogger to KML file loading in Google Earth.
+    bool getOperatorName();
 
-A web service (http://freematics.com/chart/) is provided to view data logged by obdlogger or megalogger.
+
+Check for incoming SMS
+
+    bool checkSMS();
+
+Get signal quality level (in dB)
+
+    int getSignalQuality();
+
+Get GSM location and network time
+
+    bool getLocation(GSM_LOCATION* loc);
+
+
+Initialize HTTP connection
+
+    bool httpInit();
+
+Terminate HTTP connection
+
+    void httpUninit();
+
+Connect to HTTP server
+
+    bool httpConnect(const char* url, const char* args = 0);
+
+Check if HTTP connection is established (returns 0 for in progress, 1 for success, 2 for error)
+
+    byte httpIsConnected();
+
+Read data from HTTP connection
+
+    void httpRead();
+
+Check if HTTP connection is established (returns 0 for in progress, -1 for error, bytes of http payload on success)
+
+    int httpIsRead();
+
+Toggle low-power mode
+
+    bool sleep(bool enabled);
+
+Configuration
+-------------
+
+Some configurations need to be done before the library will work for your setup. They are in SIM800.h as following.
+
+Change SIM800_RESET_PIN to the pin connect with SIM800 reset pin
+
+        #define SIM800_RESET_PIN 7
+
+Change SIM_SERIAL definition to the serial UART which SIM800 is attached to
+
+        #define SIM_SERIAL Serial1
