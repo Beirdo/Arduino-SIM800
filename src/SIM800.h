@@ -31,8 +31,8 @@ typedef struct {
 
 class CGPRS_SIM800 {
 public:
-    CGPRS_SIM800(Stream *serial, Stream *debug, int8_t reset_pin,
-                 int8_t enable_pin, int8_t dtr_pin);
+    CGPRS_SIM800(HardwareSerial *serial, HardwareSerial *debug,
+                 int8_t reset_pin, int8_t enable_pin, int8_t dtr_pin);
 
     // initialize the module
     bool init();
@@ -90,6 +90,13 @@ public:
     byte sendCommand(const char* cmd, const char* expected1,
                      const char* expected2, unsigned int timeout = 2000);
 
+    byte sendCommand(StringSumHelper &str, unsigned int timeout = 2000,
+                     const char* expected = 0);
+
+    byte sendCommand(StringSumHelper &str, const char* expected1,
+                     const char* expected2, unsigned int timeout = 2000);
+
+
     // toggle low-power mode
     bool sleep(bool enabled)
     {
@@ -112,8 +119,8 @@ private:
     byte m_bytesRecv;
     uint32_t m_checkTimer;
 
-    Stream *m_serial;
-    Stream *m_debug;
+    HardwareSerial *m_serial;
+    HardwareSerial *m_debug;
 
     int8_t m_reset_pin;
     int8_t m_enable_pin;

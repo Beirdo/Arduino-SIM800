@@ -14,8 +14,8 @@ if (!sendCommand((x), ##__VA_ARGS__)) \
     return false; \
 }
 
-CGPRS_SIM800::CGPRS_SIM800(Stream *serial, Stream *debug, int8_t reset_pin,
-                           int8_t enable_pin, int8_t dtr_pin)
+CGPRS_SIM800::CGPRS_SIM800(HardwareSerial *serial, HardwareSerial *debug,
+                           int8_t reset_pin, int8_t enable_pin, int8_t dtr_pin)
 {
     m_httpState = HTTP_DISABLED;
     m_serial = serial;
@@ -219,8 +219,8 @@ bool CGPRS_SIM800::httpGET(const char* url, const char* args)
     return true;
 }
 
-bool CGPRS_SIM800::httpsPOST(const char *url, const char *payload,
-                             const char length, const char *mimetype)
+bool CGPRS_SIM800::httpPOST(const char *url, const char *payload,
+                            const char length, const char *mimetype)
 {
     // Sets url
     SEND_OR_DIE("AT+HTTPPARA=\"URL\",\"" + String(url) + "\"");
@@ -282,6 +282,12 @@ int CGPRS_SIM800::httpIsRead()
     return 0;
 }
 
+byte CGPRS_SIM800::sendCommand(StringSumHelper &str, unsigned int timeout,
+                               const char* expected)
+{
+    return sendCommand(str.c_str(), timeout, expected);
+}
+
 byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout,
                                const char* expected)
 {
@@ -320,6 +326,12 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout,
         m_debug->println(m_buffer);
     }
     return 0;
+}
+
+byte CGPRS_SIM800::sendCommand(StringSumHelper &str, const char* expected1,
+                               const char* expected2, unsigned int timeout)
+{
+    return sendCommand(str.c_str(), expected1, expected2, timeout);
 }
 
 byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1,
