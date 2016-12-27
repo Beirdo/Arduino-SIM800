@@ -9,6 +9,8 @@
 #define SIM800_H__
 
 #include <Arduino.h>
+#include <Adafruit_FRAM_SPI.h>
+#include <FRAM_Cache.h>
 
 typedef enum {
     HTTP_DISABLED = 0,
@@ -37,8 +39,10 @@ public:
     // initialize the module
     bool init();
 
+    void attachRAM(Adafruit_FRAM_SPI *fram);
+
     // setup network
-    byte setup(const char* apn);
+    byte setup(const char *apn);
 
     // power off
     bool powerdown(void);
@@ -65,7 +69,7 @@ public:
     void httpUninit();
 
     // connect to HTTP(s) server, do GET
-    bool httpGET(const char* url, const char* args = 0);
+    bool httpGET(const char *url, const char *args = 0);
 
     // connect to HTTP(s) server, do POST
     bool httpPOST(const char *url, const char *payload, const char length,
@@ -83,44 +87,53 @@ public:
     int httpIsRead();
 
     // send AT command and check for expected response
-    byte sendCommand(const char* cmd, unsigned int timeout = 2000,
-                     const char* expected = 0);
+    uint16_t sendCommand(const char *cmd, unsigned int timeout = 2000,
+                         const char *expected = NULL, uint8_t *which = NULL);
 
     // send AT command and check for two possible responses
-    byte sendCommand(const char* cmd, const char* expected1,
-                     const char* expected2, unsigned int timeout = 2000);
+    uint16_t sendCommand(const char *cmd, const char *expected1,
+                         const char *expected2, unsigned int timeout = 2000,
+                         uint8_t *which = NULL);
 
-    byte sendCommand(StringSumHelper &str, unsigned int timeout = 2000,
-                     const char* expected = 0);
+    uint16_t sendCommand(StringSumHelper &str, unsigned int timeout = 2000,
+                         const char *expected = NULL, uint8_t *which = NULL);
 
-    byte sendCommand(StringSumHelper &str, const char* expected1,
-                     const char* expected2, unsigned int timeout = 2000);
+    uint16_t sendCommand(StringSumHelper &str, const char *expected1,
+                         const char *expected2, unsigned int timeout = 2000,
+                         uint8_t *which = NULL);
 
 
     // toggle low-power mode
     bool sleep(bool enabled)
     {
-        return sendCommand(enabled ? "AT+CFUN=0" : "AT+CFUN=1");
+        return !(!(sendCommand(enabled ? "AT+CFUN=0" : "AT+CFUN=1")));
     }
 
     // check if there is available serial data
-    bool available() { return m_serial ? m_serial->available() : false; };
+    uint16_t available()
+    { 
+        return (m_response_cache ? m_response_cache->circularReadAvailable() :
+                false); 
+    }
 
     byte httpState() { return m_httpState; };
-    char buffer() { return &m_buffer[0]; };
+    char buffer() { return m_response_cache->buffer(); };
     void purgeSerial();
 private:
-    byte checkbuffer(const char* expected1, const char* expected2 = 0,
-                     unsigned int timeout = 2000);
+    uint16_t checkbuffer(const char *expected1 = NULL,
+                         const char *expected2 = NULL, uint8_t *which,
+                         unsigned int timeout = 2000, bool startTimer = false);
 
-    char m_buffer[256];
+    Adafruit_FRAM_SPI *m_fram;
+    Cache_Segment *m_response_cache;
+
     byte m_httpState;
     bool m_useSSL;
-    byte m_bytesRecv;
     uint32_t m_checkTimer;
 
     HardwareSerial *m_serial;
     HardwareSerial *m_debug;
+    uint8_t m_buffer[32];
 
     int8_t m_reset_pin;
     int8_t m_enable_pin;
