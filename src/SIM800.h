@@ -117,7 +117,7 @@ public:
     }
 
     byte httpState() { return m_httpState; };
-    char buffer() { return m_response_cache->buffer(); };
+    uint8_t *buffer() { return &m_buffer[0]; };
     void purgeSerial();
 private:
     uint16_t checkbuffer(const char *expected1 = NULL,
