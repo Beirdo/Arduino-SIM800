@@ -33,8 +33,8 @@ typedef struct {
 
 class CGPRS_SIM800 {
 public:
-    CGPRS_SIM800(HardwareSerial *serial, HardwareSerial *debug,
-                 int8_t reset_pin, int8_t enable_pin, int8_t dtr_pin);
+    CGPRS_SIM800(HardwareSerial *serial, int8_t reset_pin, int8_t enable_pin,
+                 int8_t dtr_pin);
 
     // initialize the module
     bool init();
@@ -42,7 +42,7 @@ public:
     void attachRAM(Adafruit_FRAM_SPI *fram);
 
     // setup network
-    byte setup(const char *apn);
+    byte setup(Cache_Segment *apn_cache);
 
     // power off
     bool powerdown(void);
@@ -69,11 +69,11 @@ public:
     void httpUninit();
 
     // connect to HTTP(s) server, do GET
-    bool httpGET(const char *url, const char *args = 0);
+    bool httpGET(Cache_Segment *url_cache, const char *args = 0);
 
     // connect to HTTP(s) server, do POST
-    bool httpPOST(const char *url, const char *payload, const char length,
-                  const char *mimetype);
+    bool httpPOST(Cache_Segment *url_cache, Cache_Segment *payload_cache,
+                  Cache_Segment *mime_cache);
 
     // check if HTTP(s) connection is established
     // return 0 for in progress, 1 for success, 2 for error
@@ -121,7 +121,7 @@ public:
     void purgeSerial();
 private:
     uint16_t checkbuffer(const char *expected1 = NULL,
-                         const char *expected2 = NULL, uint8_t *which,
+                         const char *expected2 = NULL, uint8_t *which = NULL,
                          unsigned int timeout = 2000, bool startTimer = false);
 
     Adafruit_FRAM_SPI *m_fram;
@@ -132,7 +132,6 @@ private:
     uint32_t m_checkTimer;
 
     HardwareSerial *m_serial;
-    HardwareSerial *m_debug;
     uint8_t m_buffer[32];
 
     int8_t m_reset_pin;
