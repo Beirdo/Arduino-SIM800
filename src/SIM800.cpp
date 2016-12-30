@@ -228,7 +228,7 @@ bool CGPRS_SIM800::getLocation(char *loc, uint8_t maxlen)
         p++;
 
         // Copy the rest of the buffer
-        count -= (p - m_buffer);
+        count -= (p - (char *)m_buffer);
         strncpy(loc, p, count);
 
         len -= count;
