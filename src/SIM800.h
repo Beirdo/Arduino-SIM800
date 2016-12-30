@@ -79,18 +79,19 @@ public:
     uint16_t sendCommand(const char *cmd, unsigned int timeout = 2000,
                          const char *expected = NULL, uint8_t *which = NULL);
 
+    uint16_t sendCommand(const __FlashStringHelper *cmd,
+                         unsigned int timeout = 2000,
+                         const char *expected = NULL, uint8_t *which = NULL);
+
     // send AT command and check for two possible responses
     uint16_t sendCommand(const char *cmd, const char *expected1,
                          const char *expected2, unsigned int timeout = 2000,
                          uint8_t *which = NULL);
 
-    uint16_t sendCommand(StringSumHelper &str, unsigned int timeout = 2000,
-                         const char *expected = NULL, uint8_t *which = NULL);
-
-    uint16_t sendCommand(StringSumHelper &str, const char *expected1,
-                         const char *expected2, unsigned int timeout = 2000,
+    uint16_t sendCommand(const __FlashStringHelper *cmd,
+                         const char *expected1,
+                         const char *expected2, unsigned int timeout,
                          uint8_t *which = NULL);
-
 
     // toggle low-power mode
     bool sleep(bool enabled)

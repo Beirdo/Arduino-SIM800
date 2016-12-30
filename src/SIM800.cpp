@@ -44,10 +44,10 @@ bool CGPRS_SIM800::init()
     delay(100);
     digitalWrite(m_reset_pin, HIGH);
     delay(3000);
-    if (sendCommand("AT")) {
-        sendCommand("AT+IPR=115200");
-        sendCommand("ATE0");
-        sendCommand("AT+CFUN=1", 10000);
+    if (sendCommand(F("AT"))) {
+        sendCommand(F("AT+IPR=115200"));
+        sendCommand(F("ATE0"));
+        sendCommand(F("AT+CFUN=1"), 10000);
         return true;
     }
     return false;
@@ -65,7 +65,7 @@ byte CGPRS_SIM800::setup(Cache_Segment *apn_cache)
     bool success = false;
     uint16_t len;
     for (byte n = 0; n < 30; n++) {
-        len = sendCommand("AT+CREG?", 2000);
+        len = sendCommand(F("AT+CREG?"), 2000);
         if (len) {
             m_response_cache->circularRead(m_buffer, min(len, 32), true);
             char *p = strstr(m_buffer, "0,");
@@ -84,15 +84,15 @@ byte CGPRS_SIM800::setup(Cache_Segment *apn_cache)
         return 1;
     }
 
-    if (!sendCommand("AT+CGATT?")) {
+    if (!sendCommand(F("AT+CGATT?"))) {
         return 2;
     }
 
-    if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\"")) {
+    if (!sendCommand(F("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))) {
         return 3;
     }
 
-    m_serial->print("AT+SAPBR=3,1,\"APN\",\"");
+    m_serial->print(F("AT+SAPBR=3,1,\"APN\",\""));
 
     uint16_t i = 0;
     char ch;
@@ -106,14 +106,14 @@ byte CGPRS_SIM800::setup(Cache_Segment *apn_cache)
         return 4;
     }
 
-    sendCommand("AT+SAPBR=1,1", 10000);
-    sendCommand("AT+SAPBR=2,1", 10000);
+    sendCommand(F("AT+SAPBR=1,1"), 10000);
+    sendCommand(F("AT+SAPBR=2,1"), 10000);
 
     // sets the SMS mode to text
-    sendCommand("AT+CMGF=1");
+    sendCommand(F("AT+CMGF=1"));
 
     // selects the memory
-    if (!sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"")) {
+    if (!sendCommand(F("AT+CPMS=\"SM\",\"SM\",\"SM\""))) {
         return 5;
     }
 
@@ -123,7 +123,7 @@ byte CGPRS_SIM800::setup(Cache_Segment *apn_cache)
 bool CGPRS_SIM800::powerdown(void)
 {
     httpUninit();
-    return !(!(sendCommand("AT+SAPBR=0,1")));
+    return !(!(sendCommand(F("AT+SAPBR=0,1"))));
 }
 
 bool CGPRS_SIM800::getOperatorName()
@@ -131,7 +131,8 @@ bool CGPRS_SIM800::getOperatorName()
     uint8_t which;
 
     // display operator name
-    uint16_t len = sendCommand("AT+COPS?", "OK\r", "ERROR\r", 2000, &which);
+    uint16_t len = sendCommand(F("AT+COPS?"), "OK\r", "ERROR\r", 2000,
+                               &which);
     if (which == 1) {
         // Eat the matched data
         m_response_cache->circularRead(m_buffer, min(len, 32));
@@ -157,18 +158,18 @@ bool CGPRS_SIM800::checkSMS()
     uint8_t which;
     uint16_t len;
 
-    sendCommand("AT+CMGR=1", "+CMGR:", "ERROR", 2000, &which);
+    sendCommand(F("AT+CMGR=1"), "+CMGR:", "ERROR", 2000, &which);
     if (which == 1) {
         // reads the data of the SMS
-        len = sendCommand(NULL, 100, "\r\n");
+        len = sendCommand((char *)NULL, 100, "\r\n");
         m_response_cache->circularRead(m_buffer, len);
 
         // Ensure all data is received
-        if (sendCommand(NULL)) {
+        if (sendCommand((char *)NULL)) {
             // We actually do nothing with the SMS, seems silly
 
             // remove the SMS
-            sendCommand("AT+CMGD=1");
+            sendCommand(F("AT+CMGD=1"));
             return true;
         }
     }
@@ -178,7 +179,7 @@ bool CGPRS_SIM800::checkSMS()
 int CGPRS_SIM800::getSignalQuality()
 {
     uint16_t len;
-    len = sendCommand("AT+CSQ");
+    len = sendCommand(F("AT+CSQ"));
     m_response_cache->circularRead(m_buffer, min(32, len), true);
     char *p = strstr(m_buffer, "CSQ: ");
     if (p) {
@@ -194,7 +195,7 @@ int CGPRS_SIM800::getSignalQuality()
 
 bool CGPRS_SIM800::getLocation(char *loc, uint8_t maxlen)
 {
-    uint16_t len = sendCommand("AT+CIPGSMLOC=1,1", 10000);
+    uint16_t len = sendCommand(F("AT+CIPGSMLOC=1,1"), 10000);
     uint16_t count;
     char *p;
 
@@ -249,13 +250,13 @@ bool CGPRS_SIM800::getLocation(char *loc, uint8_t maxlen)
 
 void CGPRS_SIM800::httpUninit()
 {
-    sendCommand("AT+HTTPTERM");
+    sendCommand(F("AT+HTTPTERM"));
 }
 
 bool CGPRS_SIM800::httpInit()
 {
-    if  (!sendCommand("AT+HTTPINIT", 10000) ||
-         !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) {
+    if  (!sendCommand(F("AT+HTTPINIT"), 10000) ||
+         !sendCommand(F("AT+HTTPPARA=\"CID\",1"), 5000)) {
         m_httpState = HTTP_DISABLED;
         return false;
     }
@@ -279,7 +280,7 @@ bool CGPRS_SIM800::httpGET(Cache_Segment *url_cache, const char *args)
     char ch;
 
     // Sets url
-    m_serial->print("AT+HTTPPARA=\"URL\",\"");
+    m_serial->print(F("AT+HTTPPARA=\"URL\",\""));
     i = 0;
     do {
         ch = url_cache->read(i);
@@ -287,14 +288,18 @@ bool CGPRS_SIM800::httpGET(Cache_Segment *url_cache, const char *args)
             m_serial->print(ch);
         }
     } while(ch);
-    SEND_OR_DIE("\"" + (args ? ("?" + String(args)) : ""));
+    if (args) {
+        m_serial->print("?");
+        m_serial->print(args);
+    }
+    SEND_OR_DIE("\"");
 
     if (m_useSSL) {
-        SEND_OR_DIE("AT+HTTPSSL=1");
+        SEND_OR_DIE(F("AT+HTTPSSL=1"));
     }
 
     // Starts GET action
-    SEND_OR_DIE("AT+HTTPACTION=0");
+    SEND_OR_DIE(F("AT+HTTPACTION=0"));
     m_httpState = HTTP_CONNECTING;
     m_checkTimer = millis();
     return true;
@@ -309,7 +314,7 @@ bool CGPRS_SIM800::httpPOST(Cache_Segment *url_cache,
     uint16_t length;
 
     // Sets url
-    m_serial->print("AT+HTTPPARA=\"URL\",\"");
+    m_serial->print(F("AT+HTTPPARA=\"URL\",\""));
     i = 0;
     do {
         ch = url_cache->read(i);
@@ -320,7 +325,7 @@ bool CGPRS_SIM800::httpPOST(Cache_Segment *url_cache,
     SEND_OR_DIE("\"");
 
     if (mime_cache) {
-        m_serial->print("AT+HTTPPARA=\"CONTENT\",\"");
+        m_serial->print(F("AT+HTTPPARA=\"CONTENT\",\""));
         i = 0;
         do {
             ch = mime_cache->read(i);
@@ -332,11 +337,13 @@ bool CGPRS_SIM800::httpPOST(Cache_Segment *url_cache,
     }
 
     if (m_useSSL) {
-        SEND_OR_DIE("AT+HTTPSSL=1");
+        SEND_OR_DIE(F("AT+HTTPSSL=1"));
     }
 
     length = payload_cache->circularReadAvailable();
-    SEND_OR_DIE("AT+HTTPDATA=" + String(length) + ",10000", 5000, "DOWNLOAD");
+    m_serial->print(F("AT+HTTPDATA="));
+    m_serial->print(length, DEC);
+    SEND_OR_DIE(F(",10000"), 5000, "DOWNLOAD");
 
     uint16_t count = 0;
 
@@ -351,7 +358,7 @@ bool CGPRS_SIM800::httpPOST(Cache_Segment *url_cache,
     SEND_OR_DIE("");
 
     // Starts POST action
-    SEND_OR_DIE("AT+HTTPACTION=1");
+    SEND_OR_DIE(F("AT+HTTPACTION=1"));
     m_httpState = HTTP_CONNECTING;
     m_checkTimer = millis();
     return true;
@@ -373,7 +380,7 @@ byte CGPRS_SIM800::httpIsConnected()
 
 void CGPRS_SIM800::httpRead()
 {
-    m_serial->println("AT+HTTPREAD");
+    m_serial->println(F("AT+HTTPREAD"));
     m_httpState = HTTP_READING;
     m_checkTimer = millis();
 }
@@ -393,7 +400,7 @@ int CGPRS_SIM800::httpIsRead()
         }
 
         // Get the rest of the line after the match
-        uint16_t remain = sendCommand(NULL, 100, "\r\n");
+        uint16_t remain = sendCommand((char *)NULL, 100, "\r\n");
 
         while (remain > 0) {
             if (remain > 32) {
@@ -410,7 +417,7 @@ int CGPRS_SIM800::httpIsRead()
         int bytes = atoi(m_buffer);
 
         // Ensure all the received serial data is in the circular buffer
-        sendCommand(NULL);
+        sendCommand((char *)NULL);
         return bytes;
     }
 
@@ -420,12 +427,6 @@ int CGPRS_SIM800::httpIsRead()
     }
 
     return 0;
-}
-
-uint16_t CGPRS_SIM800::sendCommand(StringSumHelper &str, unsigned int timeout,
-                                   const char *expected, uint8_t *which)
-{
-    return sendCommand(str.c_str(), timeout, expected, which);
 }
 
 uint16_t CGPRS_SIM800::sendCommand(const char *cmd, unsigned int timeout,
@@ -440,14 +441,37 @@ uint16_t CGPRS_SIM800::sendCommand(const char *cmd, unsigned int timeout,
     return sendCommand(cmd, expected, NULL, timeout, which);
 }
 
-uint16_t CGPRS_SIM800::sendCommand(StringSumHelper &str, const char *expected1,
-                                   const char *expected2, unsigned int timeout,
-                                   uint8_t *which)
+uint16_t CGPRS_SIM800::sendCommand(const __FlashStringHelper *cmd,
+                                   unsigned int timeout,
+                                   const char *expected, uint8_t *which)
 {
-    return sendCommand(str.c_str(), expected1, expected2, timeout, which);
+    static const char *ok = "OK\r";
+
+    if (!expected) {
+        expected = ok;
+    }
+
+    return sendCommand(cmd, expected, NULL, timeout, which);
 }
 
 uint16_t CGPRS_SIM800::sendCommand(const char *cmd, const char *expected1,
+                                   const char *expected2, unsigned int timeout,
+                                   uint8_t *which)
+{
+    if (cmd) {
+        purgeSerial();
+        m_serial->println(cmd);
+    }
+
+    uint8_t localWhich;
+    if (!which) {
+        which = &localWhich;
+    }
+    return checkbuffer(expected1, expected2, which, timeout, true);
+}
+
+uint16_t CGPRS_SIM800::sendCommand(const __FlashStringHelper *cmd,
+                                   const char *expected1,
                                    const char *expected2, unsigned int timeout,
                                    uint8_t *which)
 {
