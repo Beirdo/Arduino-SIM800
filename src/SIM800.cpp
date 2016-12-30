@@ -110,7 +110,7 @@ byte CGPRS_SIM800::setup(Cache_Segment *apn_cache)
     sendCommand("AT+SAPBR=2,1", 10000);
 
     // sets the SMS mode to text
-    sendCommand("AT+CMGF=1");    
+    sendCommand("AT+CMGF=1");
 
     // selects the memory
     if (!sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"")) {
@@ -192,68 +192,54 @@ int CGPRS_SIM800::getSignalQuality()
     return 0;
 }
 
-bool CGPRS_SIM800::getLocation(GSM_LOCATION* loc)
+bool CGPRS_SIM800::getLocation(char *loc, uint8_t maxlen)
 {
     uint16_t len = sendCommand("AT+CIPGSMLOC=1,1", 10000);
+    uint16_t count;
     char *p;
 
-    if (len) {
-        // TODO:  is 32 large enough for this?
-        m_response_cache->circularRead(m_buffer, min(len, 32), true);
+    if (len >= maxlen) {
+        return false;
+    }
 
+    if (len) {
+        count = m_response_cache->circularRead(m_buffer, min(len, 32), true);
+
+        // Toss the +CIPGSMLOC:
         if (!(p = strchr(m_buffer, ':'))) {
             return false;
         }
 
-        if (!(p = strchr(p, ','))) {
+        // Skip the space
+        p++;
+        // the firtt term is 0 on success, else it's a failure
+        if (*p != '0') {
             return false;
         }
-        loc->lon = (float)atoi(++p);
-        
-        if (!(p = strchr(p, '.'))) {
-            return false;
-        }
-        loc->lon += ((float)atoi(++p) / 1e6);
 
-        if (!(p = strchr(p, ','))) {
-            return false;
+        while (*p && *p != ',') {
+            p++;
         }
-        loc->lat = (float)atoi(++p);
 
-        if (!(p = strchr(p, '.'))) {
+        // Skip the comma
+        if (!p) {
             return false;
         }
-        loc->lat += ((float)atoi(++p) / 1e6);
+        p++;
 
-        if (!(p = strchr(p, ','))) {
-            return false;
-        }
-        loc->year = atoi(++p) - 2000;
+        // Copy the rest of the buffer
+        count -= (p - m_buffer);
+        strncpy(loc, p, count);
 
-        if (!(p = strchr(p, '/'))) {
-            return false;
-        }
-        loc->month = atoi(++p);
+        len -= count;
 
-        if (!(p = strchr(p, '/'))) {
-            return false;
+        // pull the rest of the circular buffer, up to maxlen
+        while (len) {
+            count = m_response_cache->circularRead(m_buffer, min(len, 32),
+                                                   true);
+            strncat(loc, m_buffer, count);
+            len -= count;
         }
-        loc->day = atoi(++p);
-
-        if (!(p = strchr(p, ','))) {
-            return false;
-        }
-        loc->hour = atoi(++p);
-
-        if (!(p = strchr(p, ':'))) {
-            return false;
-        }
-        loc->minute = atoi(++p);
-
-        if (!(p = strchr(p, ':'))) {
-            return false;
-        }
-        loc->second = atoi(++p);
 
         return true;
     }
@@ -306,7 +292,7 @@ bool CGPRS_SIM800::httpGET(Cache_Segment *url_cache, const char *args)
     if (m_useSSL) {
         SEND_OR_DIE("AT+HTTPSSL=1");
     }
-    
+
     // Starts GET action
     SEND_OR_DIE("AT+HTTPACTION=0");
     m_httpState = HTTP_CONNECTING;
@@ -344,7 +330,7 @@ bool CGPRS_SIM800::httpPOST(Cache_Segment *url_cache,
         } while(ch);
         SEND_OR_DIE("\"");
     }
-    
+
     if (m_useSSL) {
         SEND_OR_DIE("AT+HTTPSSL=1");
     }
@@ -376,7 +362,7 @@ bool CGPRS_SIM800::httpPOST(Cache_Segment *url_cache,
 byte CGPRS_SIM800::httpIsConnected()
 {
     uint8_t ret;
-    
+
     checkbuffer("0,200", "0,60", &ret, 10000);
     if (ret >= 2) {
         m_httpState = HTTP_ERROR;
@@ -427,12 +413,12 @@ int CGPRS_SIM800::httpIsRead()
         sendCommand(NULL);
         return bytes;
     }
-    
+
     if (ret >= 2) {
         m_httpState = HTTP_ERROR;
         return -1;
     }
-    
+
     return 0;
 }
 

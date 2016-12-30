@@ -20,17 +20,6 @@ typedef enum {
     HTTP_ERROR,
 } HTTP_STATES;
 
-typedef struct {
-  float lat;
-  float lon;
-  uint8_t year; /* year past 2000, e.g. 15 for 2015 */
-  uint8_t month;
-  uint8_t day;
-  uint8_t hour;
-  uint8_t minute;
-  uint8_t second;
-} GSM_LOCATION;
-
 class CGPRS_SIM800 {
 public:
     CGPRS_SIM800(HardwareSerial *serial, int8_t reset_pin, int8_t enable_pin,
@@ -57,7 +46,7 @@ public:
     int getSignalQuality();
 
     // get GSM location and network time
-    bool getLocation(GSM_LOCATION* loc);
+    bool getLocation(char *loc, uint8_t maxlen);
 
     // initialize HTTP connection
     bool httpInit();
@@ -111,9 +100,9 @@ public:
 
     // check if there is available serial data
     uint16_t available()
-    { 
+    {
         return (m_response_cache ? m_response_cache->circularReadAvailable() :
-                false); 
+                false);
     }
 
     byte httpState() { return m_httpState; };
