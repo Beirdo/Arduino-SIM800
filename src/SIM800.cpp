@@ -68,9 +68,9 @@ byte CGPRS_SIM800::setup(Cache_Segment *apn_cache)
         len = sendCommand(F("AT+CREG?"), 2000);
         if (len) {
             m_response_cache->circularRead(m_buffer, min(len, 32), true);
-            char *p = strstr(m_buffer, "0,");
+            char *p = (char *)strstr((char *)m_buffer, "0,");
             if (p) {
-                char *mode = *(p + 2);
+                char mode = *(p + 2);
                 if (mode == '1' || mode == '5') {
                     success = true;
                     break;
@@ -139,14 +139,14 @@ bool CGPRS_SIM800::getOperatorName()
 
         // Read the data AFTER the matched data
         m_response_cache->circularRead(m_buffer, 32, true);
-        char *p = strstr(m_buffer, ",\"");
+        char *p = (char *)strstr((char *)m_buffer, ",\"");
         if (p) {
             p += 2;
-            char *s = strchr(p, '\"');
+            char *s = (char *)strchr(p, '\"');
             if (s) {
                 *s = 0;
             }
-            strcpy(m_buffer, p);
+            strcpy((char *)m_buffer, (const char *)p);
             return true;
         }
     }
@@ -181,7 +181,7 @@ int CGPRS_SIM800::getSignalQuality()
     uint16_t len;
     len = sendCommand(F("AT+CSQ"));
     m_response_cache->circularRead(m_buffer, min(32, len), true);
-    char *p = strstr(m_buffer, "CSQ: ");
+    char *p = (char *)strstr((char *)m_buffer, "CSQ: ");
     if (p) {
         int n = atoi(p + 2);
         if (n == 99 || n == -1) {
@@ -207,7 +207,7 @@ bool CGPRS_SIM800::getLocation(char *loc, uint8_t maxlen)
         count = m_response_cache->circularRead(m_buffer, min(len, 32), true);
 
         // Toss the +CIPGSMLOC:
-        if (!(p = strchr(m_buffer, ':'))) {
+        if (!(p = (char *)strchr((char *)m_buffer, ':'))) {
             return false;
         }
 
@@ -218,12 +218,12 @@ bool CGPRS_SIM800::getLocation(char *loc, uint8_t maxlen)
             return false;
         }
 
+        // Skip the comma
         while (*p && *p != ',') {
             p++;
         }
 
-        // Skip the comma
-        if (!p) {
+        if (!*p) {
             return false;
         }
         p++;
@@ -238,7 +238,7 @@ bool CGPRS_SIM800::getLocation(char *loc, uint8_t maxlen)
         while (len) {
             count = m_response_cache->circularRead(m_buffer, min(len, 32),
                                                    true);
-            strncat(loc, m_buffer, count);
+            strncat(loc, (const char *)m_buffer, count);
             len -= count;
         }
 
@@ -414,7 +414,7 @@ int CGPRS_SIM800::httpIsRead()
         }
 
         // Convert the byte count to integer
-        int bytes = atoi(m_buffer);
+        int bytes = atoi((char *)m_buffer);
 
         // Ensure all the received serial data is in the circular buffer
         sendCommand((char *)NULL);
@@ -501,7 +501,7 @@ uint16_t CGPRS_SIM800::checkbuffer(const char *expected1,
     do {
         delay(10);
         while (m_serial->available()) {
-            char *c = m_serial->read();
+            char c = m_serial->read();
             if (n >= sizeof(m_buffer) - 1) {
                 m_response_cache->circularWrite(m_buffer, n);
                 n = 0;
