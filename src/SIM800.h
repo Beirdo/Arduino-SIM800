@@ -22,8 +22,7 @@ typedef enum {
 
 class CGPRS_SIM800 {
 public:
-    CGPRS_SIM800(HardwareSerial *serial, int8_t reset_pin, int8_t enable_pin,
-                 int8_t dtr_pin);
+    CGPRS_SIM800(HardwareSerial *serial, int8_t reset_pin, int8_t dtr_pin);
 
     // initialize the module
     bool init();
@@ -125,7 +124,6 @@ private:
     uint8_t m_buffer[32];
 
     int8_t m_reset_pin;
-    int8_t m_enable_pin;
     int8_t m_dtr_pin;
 };
 

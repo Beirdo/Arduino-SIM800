@@ -14,12 +14,11 @@ if (!sendCommand((x), ##__VA_ARGS__)) \
 }
 
 CGPRS_SIM800::CGPRS_SIM800(HardwareSerial *serial, int8_t reset_pin,
-                           int8_t enable_pin, int8_t dtr_pin)
+                           int8_t dtr_pin)
 {
     m_httpState = HTTP_DISABLED;
     m_serial = serial;
     m_reset_pin = reset_pin;
-    m_enable_pin = enable_pin;
     m_dtr_pin = dtr_pin;
     m_fram = NULL;
     m_response_cache = NULL;
@@ -29,11 +28,6 @@ bool CGPRS_SIM800::init()
 {
     if (!m_serial) {
         return false;
-    }
-
-    if (m_enable_pin != -1) {
-        pinMode(m_enable_pin, OUTPUT);
-        digitalWrite(m_enable_pin, HIGH);
     }
 
     m_serial->begin(115200);
